@@ -1,0 +1,1 @@
+"""`AIAnalysisService` (Anthropic Claude), versioned prompts, strict JSON schemas. Advisory only — never performs deterministic financial math. Not yet implemented — see IMPLEMENTATION_PLAN.md Phase 8."""

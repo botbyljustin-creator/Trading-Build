@@ -1,0 +1,1 @@
+"""Market-data provider interface (`MarketDataProvider`) and implementations. Not yet implemented — see IMPLEMENTATION_PLAN.md Phase 2 (Mock/CSV/TradingView webhook providers) and Phase 2+ (Polygon/Alpaca/IBKR)."""
