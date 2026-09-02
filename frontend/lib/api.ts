@@ -8,6 +8,7 @@ import type {
   ContradictionResolution,
   GeneratedCodeRow,
   Job,
+  ModelReadiness,
   OptimizationRun,
   Project,
   Report,
@@ -149,6 +150,10 @@ export function useApi() {
       if (filters?.limit) params.set("limit", String(filters.limit));
       return call<SearchResult[]>(`/api/v1/projects/${projectId}/search?${params.toString()}`);
     },
+
+    // Model backtest readiness
+    getModelReadiness: (projectId: string) =>
+      call<ModelReadiness[]>(`/api/v1/projects/${projectId}/models/readiness`),
 
     // Contradictions
     detectContradictions: (projectId: string) =>

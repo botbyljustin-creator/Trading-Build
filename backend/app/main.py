@@ -14,7 +14,9 @@ from app.api.routes.concepts import router as concepts_router
 from app.api.routes.contradictions import router as contradictions_router
 from app.api.routes.health import router as health_router
 from app.api.routes.jobs import router as jobs_router
+from app.api.routes.models import router as models_router
 from app.api.routes.projects import router as projects_router
+from app.api.routes.quantifications import router as quantifications_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.rules import router as rules_router
 from app.api.routes.search import router as search_router
@@ -55,6 +57,8 @@ def create_app() -> FastAPI:
     app.include_router(concepts_router)
     app.include_router(rules_router)
     app.include_router(search_router)
+    app.include_router(models_router)
+    app.include_router(quantifications_router)
     app.include_router(contradictions_router)
     app.include_router(strategies_router)
     app.include_router(backtests_router)

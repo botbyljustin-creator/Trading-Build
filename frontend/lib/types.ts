@@ -280,6 +280,23 @@ export interface SearchResult {
   citations: SearchCitation[];
 }
 
+export interface ModelReadiness {
+  series_id: string | null;
+  series_name: string;
+  creator_name: string | null;
+  total_rules: number;
+  explicit_rules: number;
+  fully_quantifiable_rules: number;
+  partially_quantifiable_rules: number;
+  discretionary_rules: number;
+  nasdaq_relevant_rules: number;
+  categories_present: string[];
+  categories_missing: string[];
+  unresolved_contradictions: number;
+  score: number;
+  score_breakdown: Record<string, number>;
+}
+
 export interface Report {
   id: string;
   strategy_version_id: string;

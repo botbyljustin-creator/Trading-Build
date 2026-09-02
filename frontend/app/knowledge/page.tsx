@@ -6,6 +6,7 @@ import { ConceptsPanel } from "@/components/knowledge/ConceptsPanel";
 import { RulesPanel } from "@/components/knowledge/RulesPanel";
 import { ContradictionsPanel } from "@/components/knowledge/ContradictionsPanel";
 import { SearchPanel } from "@/components/knowledge/SearchPanel";
+import { ModelsPanel } from "@/components/knowledge/ModelsPanel";
 
 export default function KnowledgePage() {
   return (
@@ -18,6 +19,7 @@ export default function KnowledgePage() {
               { key: "search", label: "Search", content: <SearchPanel projectId={projectId} /> },
               { key: "rules", label: "Rules", content: <RulesPanel projectId={projectId} /> },
               { key: "concepts", label: "Concepts", content: <ConceptsPanel projectId={projectId} /> },
+              { key: "models", label: "Models", content: <ModelsPanel projectId={projectId} /> },
               {
                 key: "contradictions",
                 label: "Contradictions",

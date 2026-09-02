@@ -16,7 +16,7 @@ from app.models.backtest import Backtest
 from app.models.job import Job
 from app.models.project import Project
 from app.models.report import Report
-from app.models.rule import Contradiction, Rule
+from app.models.rule import Contradiction, Rule, RuleQuantification
 from app.models.source import Source, Video
 from app.models.strategy import Strategy, StrategyVersion
 from app.models.user import User
@@ -80,6 +80,23 @@ def get_owned_rule(
     if rule is None:
         raise _NOT_FOUND
     return rule
+
+
+def get_owned_rule_quantification(
+    quantification_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> RuleQuantification:
+    quantification = (
+        db.query(RuleQuantification)
+        .join(Rule, Rule.id == RuleQuantification.rule_id)
+        .join(Project, Project.id == Rule.project_id)
+        .filter(RuleQuantification.id == quantification_id, Project.owner_id == user.id)
+        .one_or_none()
+    )
+    if quantification is None:
+        raise _NOT_FOUND
+    return quantification
 
 
 def get_owned_contradiction(
