@@ -14,6 +14,8 @@ import type {
   Rule,
   RuleCategory,
   RuleStatus,
+  SearchResult,
+  SearchResultType,
   Series,
   SourceRecord,
   Strategy,
@@ -134,6 +136,19 @@ export function useApi() {
     ) => call<Rule>(`/api/v1/rules/${id}`, { method: "PATCH", body: data }),
     approveRule: (id: string) => call<Rule>(`/api/v1/rules/${id}/approve`, { method: "POST" }),
     rejectRule: (id: string) => call<Rule>(`/api/v1/rules/${id}/reject`, { method: "POST" }),
+
+    // Knowledge search
+    search: (
+      projectId: string,
+      query: string,
+      filters?: { types?: SearchResultType[]; seriesId?: string; limit?: number },
+    ) => {
+      const params = new URLSearchParams({ q: query });
+      if (filters?.types?.length) params.set("types", filters.types.join(","));
+      if (filters?.seriesId) params.set("series_id", filters.seriesId);
+      if (filters?.limit) params.set("limit", String(filters.limit));
+      return call<SearchResult[]>(`/api/v1/projects/${projectId}/search?${params.toString()}`);
+    },
 
     // Contradictions
     detectContradictions: (projectId: string) =>

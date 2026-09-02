@@ -257,6 +257,29 @@ export interface OptimizationRun {
   overfitting_reasons: string[] | null;
 }
 
+export interface SearchCitation {
+  video_id: string;
+  video_title: string;
+  start_seconds: number;
+  end_seconds: number;
+  excerpt: string;
+}
+
+export type SearchResultType = "CONCEPT" | "RULE" | "TRANSCRIPT";
+
+export interface SearchResult {
+  result_type: SearchResultType;
+  id: string;
+  title: string;
+  snippet: string;
+  rank: number;
+  series_id: string | null;
+  status: string | null;
+  evidence_type: string | null;
+  confidence: number | null;
+  citations: SearchCitation[];
+}
+
 export interface Report {
   id: string;
   strategy_version_id: string;
