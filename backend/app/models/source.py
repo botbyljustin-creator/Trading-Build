@@ -57,6 +57,15 @@ class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     project_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), index=True
     )
+    # Nullable: a video ingested as a bare VIDEO source (or before series
+    # resolution) has no series. Never inferred after the fact — set only
+    # when the video was actually discovered as part of a specific
+    # playlist/mentorship series (see app/ingestion — "don't flatten the
+    # channel").
+    series_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("series.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    position_in_series: Mapped[int | None] = mapped_column(Integer, nullable=True)
     youtube_video_id: Mapped[str] = mapped_column(String(32), index=True)
     title: Mapped[str] = mapped_column(String(500))
     channel_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -70,8 +79,13 @@ class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         SAEnum(TranscriptStatus, native_enum=False, length=32), default=TranscriptStatus.PENDING
     )
     transcript_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # True when the transcript was pasted/uploaded by the user rather than
+    # fetched live from YouTube (see app/services/manual_import_service.py).
+    # Still goes through the identical chunking/citation/extraction path.
+    is_manual_import: Mapped[bool] = mapped_column(Boolean, default=False)
 
     source: Mapped[Source] = relationship(back_populates="videos")
+    series: Mapped[Series | None] = relationship(back_populates="videos")  # noqa: F821
     transcript: Mapped[Transcript | None] = relationship(
         back_populates="video", uselist=False, cascade="all, delete-orphan"
     )
@@ -110,6 +124,11 @@ class TranscriptChunk(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     end_seconds: Mapped[float] = mapped_column(Float)
     text: Mapped[str] = mapped_column(Text)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # sha256 of `text`, used to skip re-running extraction on content
+    # already processed elsewhere (Module: Control Token Cost). Nullable
+    # only so existing rows from before this column existed don't block
+    # the migration — always populated for chunks created going forward.
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     transcript: Mapped[Transcript] = relationship(back_populates="chunks")
     embedding: Mapped[Embedding | None] = relationship(

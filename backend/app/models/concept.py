@@ -4,7 +4,7 @@ import uuid
 
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import Float, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -24,6 +24,11 @@ class Concept(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(255), index=True)
     description: Mapped[str] = mapped_column(Text)
     confidence: Mapped[float] = mapped_column(Float)
+    # Deterministic keyword tags (e.g. "NASDAQ", "NQ", "US100") — see
+    # app/services/tagging.py. A concept can span sources from many
+    # instruments; this is never used to assert the concept "belongs" to
+    # only these, only to help filter/search.
+    instrument_tags: Mapped[list[str]] = mapped_column(JSONB, default=list)
 
     sources: Mapped[list[ConceptSource]] = relationship(
         back_populates="concept", cascade="all, delete-orphan"
@@ -69,6 +74,10 @@ class ConceptRelation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     relation_type: Mapped[ConceptRelationType] = mapped_column(
         SAEnum(ConceptRelationType, native_enum=False, length=32)
     )
+    # Free-text edge label for the knowledge graph (e.g. "draws to",
+    # "confirms", "precondition for") — optional, coarser `relation_type`
+    # is what contradiction/relatedness logic actually keys off of.
+    label: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     concept: Mapped[Concept] = relationship(
         back_populates="outgoing_relations", foreign_keys=[concept_id]

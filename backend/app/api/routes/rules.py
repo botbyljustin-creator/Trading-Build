@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api.routes.common import JobOut
 from app.core.db import get_db
-from app.models.enums import JobType, RuleCategory, RuleStatus
+from app.models.enums import JobType, Quantifiability, RuleCategory, RuleEvidenceType, RuleStatus
 from app.models.project import Project
 from app.models.rule import Rule
 from app.models.user import User
@@ -17,6 +17,7 @@ from app.security.clerk import get_current_user
 from app.security.ownership import get_owned_project, get_owned_rule
 from app.services import job_service
 from app.services.audit import record_audit
+from app.services.tagging import tag_instruments
 
 router = APIRouter(prefix="/api/v1", tags=["rules"])
 
@@ -35,11 +36,15 @@ class RuleOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    series_id: uuid.UUID | None
     category: RuleCategory
     natural_language_rule: str
     machine_readable_rule: dict | None
     confidence: float
     status: RuleStatus
+    evidence_type: RuleEvidenceType
+    quantifiability: Quantifiability | None
+    instrument_tags: list[str]
     is_user_provided: bool
     user_note: str | None
     created_at: datetime
@@ -50,12 +55,14 @@ class RuleUpdate(BaseModel):
     natural_language_rule: str | None = None
     machine_readable_rule: dict | None = None
     user_note: str | None = None
+    quantifiability: Quantifiability | None = None
 
 
 class RuleCreate(BaseModel):
     category: RuleCategory
     natural_language_rule: str = Field(min_length=1)
     machine_readable_rule: dict | None = None
+    quantifiability: Quantifiability | None = None
 
 
 @router.post(
@@ -80,12 +87,21 @@ def list_rules(
     db: Session = Depends(get_db),
     rule_status: RuleStatus | None = None,
     category: RuleCategory | None = None,
+    evidence_type: RuleEvidenceType | None = None,
+    series_id: uuid.UUID | None = None,
+    instrument: str | None = None,
 ) -> list[Rule]:
     query = db.query(Rule).filter(Rule.project_id == project.id)
     if rule_status is not None:
         query = query.filter(Rule.status == rule_status)
     if category is not None:
         query = query.filter(Rule.category == category)
+    if evidence_type is not None:
+        query = query.filter(Rule.evidence_type == evidence_type)
+    if series_id is not None:
+        query = query.filter(Rule.series_id == series_id)
+    if instrument is not None:
+        query = query.filter(Rule.instrument_tags.contains([instrument.upper()]))
     return query.order_by(Rule.created_at.desc()).all()
 
 
@@ -109,6 +125,9 @@ def create_manual_rule(
         machine_readable_rule=payload.machine_readable_rule,
         confidence=1.0,
         status=RuleStatus.USER_CONFIRMED,
+        evidence_type=RuleEvidenceType.USER_DEFINED,
+        quantifiability=payload.quantifiability,
+        instrument_tags=tag_instruments(payload.natural_language_rule),
         is_user_provided=True,
         reviewed_by_user_id=user.id,
         reviewed_at=datetime.now(UTC),
@@ -138,10 +157,13 @@ def update_rule(
 ) -> Rule:
     if payload.natural_language_rule is not None:
         rule.natural_language_rule = payload.natural_language_rule
+        rule.instrument_tags = tag_instruments(payload.natural_language_rule)
     if payload.machine_readable_rule is not None:
         rule.machine_readable_rule = payload.machine_readable_rule
     if payload.user_note is not None:
         rule.user_note = payload.user_note
+    if payload.quantifiability is not None:
+        rule.quantifiability = payload.quantifiability
     rule.status = RuleStatus.USER_MODIFIED
     rule.reviewed_by_user_id = user.id
     rule.reviewed_at = datetime.now(UTC)

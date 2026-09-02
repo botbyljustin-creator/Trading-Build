@@ -76,7 +76,27 @@ class ContradictionResolution(str, Enum):
     USE_A = "USE_A"
     USE_B = "USE_B"
     CONTEXT_DEPENDENT = "CONTEXT_DEPENDENT"
+    KEEP_SEPARATE = "KEEP_SEPARATE"
     IGNORE = "IGNORE"
+
+
+class RuleEvidenceType(str, Enum):
+    """How directly the source material supports this rule — orthogonal to
+    `RuleStatus` (which tracks review/compile-pipeline state, not evidence
+    strength). Set once at extraction time; editing a rule's text doesn't
+    change why it was originally classified this way."""
+
+    EXPLICIT = "EXPLICIT"  # creator clearly states the rule
+    IMPLIED = "IMPLIED"  # strongly implied by repeated examples, not stated outright
+    DISCRETIONARY = "DISCRETIONARY"  # source explicitly frames this as requiring judgment
+    USER_DEFINED = "USER_DEFINED"  # the user typed this rule directly, not extracted
+    AI_ASSUMPTION = "AI_ASSUMPTION"  # the model inferred this to fill a gap; requires approval
+
+
+class Quantifiability(str, Enum):
+    FULLY_QUANTIFIABLE = "FULLY_QUANTIFIABLE"
+    PARTIALLY_QUANTIFIABLE = "PARTIALLY_QUANTIFIABLE"
+    DISCRETIONARY = "DISCRETIONARY"
 
 
 class StrategyVersionStatus(str, Enum):

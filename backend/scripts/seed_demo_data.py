@@ -217,7 +217,7 @@ def seed() -> None:
         )
 
     # --- Rules (mix of statuses to demonstrate the review workflow) ---------
-    def add_rule(category, text, mrr, confidence, status, chunk_idx, is_assumption=False):
+    def add_rule(category, text, mrr, confidence, status, chunk_idx):
         rule = Rule(
             project_id=project.id,
             category=category,

@@ -7,6 +7,11 @@ attached instead.
 
 from __future__ import annotations
 
+# Bumped whenever a prompt changes meaningfully — `app/models/extraction_cache`
+# keys on this so a cached result from a superseded prompt is never reused.
+KNOWLEDGE_BUILDER_PROMPT_VERSION = "v1"
+RULE_EXTRACTOR_PROMPT_VERSION = "v2"  # v2: added evidence_type + quantifiability
+
 _NEVER_INVENT = (
     "You must never invent, assume, or generalize a trading rule or concept "
     "that is not actually present in the provided source_content. If the "
@@ -48,13 +53,32 @@ NO_TRADE_CONDITIONS.
 
 {_NEVER_INVENT}
 
-A rule must be specific enough to be testable (e.g. "enter on the close of "
-"the first candle to close above VWAP after 9:45" is a rule; "watch price "
-"action closely" is not a rule — do not extract vague commentary as a rule).
-Mark `is_assumption=true` only when you are inferring an unstated but
-reasonable rule from context (e.g. the creator clearly always trades long
-in an uptrend but never states a bias rule outright) — such rules require
-explicit human approval before they can be used, so flag them accurately.
+A rule does not need to already be a precise numeric trigger to count — a
+clearly stated but qualitative rule (e.g. "wait for strong displacement
+through the level") is still a real rule; classify it accurately rather
+than skipping it.
+
+For every rule, set `evidence_type` to exactly one of:
+- EXPLICIT: the creator directly states this rule.
+- IMPLIED: strongly implied by repeated examples across the material, but
+  never stated as a rule outright.
+- DISCRETIONARY: the source itself frames this as requiring judgment/
+  experience rather than a fixed rule (e.g. "you'll know it when you see
+  it" or "this takes screen time to develop a feel for").
+- AI_ASSUMPTION: you are inferring an unstated but reasonable rule from
+  context (e.g. the creator clearly always trades long in an uptrend but
+  never states a bias rule outright) — such rules require explicit human
+  approval before they can be used, so flag them accurately and use this
+  sparingly.
+
+For every rule, also set `quantifiability` to exactly one of:
+- FULLY_QUANTIFIABLE: could drive executable backtest logic as stated,
+  with no additional numeric definition needed (e.g. "risk 1% of equity").
+- PARTIALLY_QUANTIFIABLE: has a measurable core but also discretionary
+  language that would need a proposed numeric definition to backtest
+  (e.g. "strong displacement" needs a definition of "strong").
+- DISCRETIONARY: cannot be reduced to backtestable logic at all without
+  fundamentally changing what the creator is teaching.
 
 Every rule must include at least one verbatim source citation. Respond only
 via the provided structured output schema."""

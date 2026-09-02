@@ -12,10 +12,12 @@ from app.models.audit import AuditLog
 from app.models.backtest import Backtest, BacktestMetrics, BacktestTrade, OptimizationRun
 from app.models.base import Base
 from app.models.concept import Concept, ConceptRelation, ConceptSource
+from app.models.extraction_cache import ExtractionCache
 from app.models.job import Job
 from app.models.project import Project
 from app.models.report import Report
-from app.models.rule import Contradiction, Rule, RuleSource
+from app.models.rule import Contradiction, Rule, RuleQuantification, RuleSource
+from app.models.series import Series
 from app.models.source import Embedding, Source, Transcript, TranscriptChunk, Video
 from app.models.strategy import GeneratedCode, Strategy, StrategySpec, StrategyVersion
 from app.models.user import User
@@ -24,6 +26,7 @@ __all__ = [
     "Base",
     "User",
     "Project",
+    "Series",
     "Source",
     "Video",
     "Transcript",
@@ -34,6 +37,7 @@ __all__ = [
     "ConceptRelation",
     "Rule",
     "RuleSource",
+    "RuleQuantification",
     "Contradiction",
     "Strategy",
     "StrategyVersion",
@@ -46,4 +50,5 @@ __all__ = [
     "Report",
     "Job",
     "AuditLog",
+    "ExtractionCache",
 ]

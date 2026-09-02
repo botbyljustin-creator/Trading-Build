@@ -14,6 +14,7 @@ import type {
   Rule,
   RuleCategory,
   RuleStatus,
+  Series,
   SourceRecord,
   Strategy,
   StrategyVersion,
@@ -93,6 +94,20 @@ export function useApi() {
     getSource: (id: string) => call<SourceRecord>(`/api/v1/sources/${id}`),
     listSourceVideos: (sourceId: string) => call<VideoRecord[]>(`/api/v1/sources/${sourceId}/videos`),
     getVideo: (id: string) => call<VideoRecord>(`/api/v1/videos/${id}`),
+    listSeries: (projectId: string) => call<Series[]>(`/api/v1/projects/${projectId}/series`),
+    importManualVideo: (
+      projectId: string,
+      data: {
+        url: string;
+        title: string;
+        creator_name: string;
+        channel_name?: string;
+        series_name?: string;
+        youtube_playlist_id?: string;
+        position_in_series?: number;
+        segments: { start: number; duration?: number; text: string }[];
+      },
+    ) => call<VideoRecord>(`/api/v1/projects/${projectId}/videos/manual-import`, { method: "POST", body: data }),
 
     // Concepts
     extractConcepts: (projectId: string) =>

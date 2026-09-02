@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, ErrorNote, Spinner } from "@/components/ui/Spinner";
-import type { SourceRecord, VideoRecord } from "@/lib/types";
+import { ManualImportForm } from "@/components/sources/ManualImportForm";
+import type { Series, SourceRecord, VideoRecord } from "@/lib/types";
 
 export default function SourcesPage() {
   return <RequireProject>{(projectId) => <SourcesForProject projectId={projectId} />}</RequireProject>;
@@ -24,14 +25,17 @@ const SOURCE_STATUS_TONE: Record<string, "neutral" | "success" | "danger" | "war
 function SourcesForProject({ projectId }: { projectId: string }) {
   const api = useApi();
   const [sources, setSources] = useState<SourceRecord[] | null>(null);
+  const [series, setSeries] = useState<Series[] | null>(null);
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showManualImport, setShowManualImport] = useState(false);
 
   async function refresh() {
     try {
       setSources(await api.listSources(projectId));
+      setSeries(await api.listSeries(projectId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load sources.");
     }
@@ -86,6 +90,44 @@ function SourcesForProject({ projectId }: { projectId: string }) {
         </form>
         {error && <div className="mt-2"><ErrorNote message={error} /></div>}
       </Card>
+
+      <Card>
+        <CardHeader
+          title="Manual transcript import"
+          subtitle="If StrategyForge AI can't reach YouTube from where it's running, paste a transcript you fetched yourself."
+          action={
+            <Button variant="secondary" onClick={() => setShowManualImport((v) => !v)}>
+              {showManualImport ? "Cancel" : "Import a transcript"}
+            </Button>
+          }
+        />
+        {showManualImport && (
+          <ManualImportForm
+            projectId={projectId}
+            onImported={() => {
+              setShowManualImport(false);
+              refresh();
+            }}
+          />
+        )}
+      </Card>
+
+      {series && series.length > 0 && (
+        <Card>
+          <CardHeader title="Series / Creators" subtitle="Each playlist or mentorship stays distinct — rules are never mixed across series automatically." />
+          <div className="divide-y divide-base-800">
+            {series.map((s) => (
+              <div key={s.id} className="flex items-center justify-between py-2 text-sm">
+                <div>
+                  <p className="text-slate-200">{s.series_name}</p>
+                  <p className="text-xs text-slate-500">{s.creator_name}</p>
+                </div>
+                <Badge tone="info">{s.video_count} videos</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <CardHeader title="Sources" />

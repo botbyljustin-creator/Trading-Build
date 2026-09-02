@@ -11,6 +11,14 @@ import { Textarea } from "@/components/ui/Input";
 import { formatTimestamp } from "./ConceptsPanel";
 import type { Rule, RuleCategory } from "@/lib/types";
 
+const EVIDENCE_TONE: Record<Rule["evidence_type"], "neutral" | "success" | "warn" | "info"> = {
+  EXPLICIT: "success",
+  IMPLIED: "info",
+  DISCRETIONARY: "warn",
+  USER_DEFINED: "neutral",
+  AI_ASSUMPTION: "warn",
+};
+
 const GROUPS: { key: string; label: string; statuses: Rule["status"][] }[] = [
   { key: "confirmed", label: "Confirmed", statuses: ["USER_CONFIRMED", "USER_MODIFIED"] },
   { key: "review", label: "Needs Review", statuses: ["EXTRACTED", "AMBIGUOUS", "AI_ASSUMPTION"] },
@@ -136,6 +144,17 @@ export function RulesPanel({ projectId }: { projectId: string }) {
                   <div className="mb-1 flex items-center gap-2">
                     <Badge tone="neutral">{rule.category.replace(/_/g, " ")}</Badge>
                     <RuleStatusBadge status={rule.status} />
+                    <Badge tone={EVIDENCE_TONE[rule.evidence_type]}>{rule.evidence_type.replace(/_/g, " ")}</Badge>
+                    {rule.quantifiability && (
+                      <Badge tone={rule.quantifiability === "FULLY_QUANTIFIABLE" ? "success" : "warn"}>
+                        {rule.quantifiability.replace(/_/g, " ")}
+                      </Badge>
+                    )}
+                    {rule.instrument_tags.map((tag) => (
+                      <Badge key={tag} tone="info">
+                        {tag.replace(/_/g, " ")}
+                      </Badge>
+                    ))}
                     {rule.is_user_provided && <Badge tone="info">user-provided</Badge>}
                     <span className="text-[10px] text-slate-600">{Math.round(rule.confidence * 100)}% confidence</span>
                   </div>

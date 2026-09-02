@@ -35,6 +35,7 @@ class ConceptOut(BaseModel):
     name: str
     description: str
     confidence: float
+    instrument_tags: list[str]
     created_at: datetime
     sources: list[ConceptSourceOut]
 
@@ -57,11 +58,11 @@ def extract_concepts(
 
 @router.get("/projects/{project_id}/concepts", response_model=list[ConceptOut])
 def list_concepts(
-    project: Project = Depends(get_owned_project), db: Session = Depends(get_db)
+    project: Project = Depends(get_owned_project),
+    db: Session = Depends(get_db),
+    instrument: str | None = None,
 ) -> list[Concept]:
-    return (
-        db.query(Concept)
-        .filter(Concept.project_id == project.id)
-        .order_by(Concept.created_at.desc())
-        .all()
-    )
+    query = db.query(Concept).filter(Concept.project_id == project.id)
+    if instrument is not None:
+        query = query.filter(Concept.instrument_tags.contains([instrument.upper()]))
+    return query.order_by(Concept.created_at.desc()).all()

@@ -69,6 +69,15 @@ export interface Job {
   error_message: string | null;
 }
 
+export interface Series {
+  id: string;
+  creator_name: string;
+  series_name: string;
+  youtube_playlist_id: string | null;
+  description: string | null;
+  video_count: number;
+}
+
 export interface SourceRecord {
   id: string;
   source_type: SourceType;
@@ -84,6 +93,8 @@ export interface SourceRecord {
 
 export interface VideoRecord {
   id: string;
+  series_id: string | null;
+  position_in_series: number | null;
   youtube_video_id: string;
   title: string;
   channel_name: string | null;
@@ -92,6 +103,7 @@ export interface VideoRecord {
   thumbnail_url: string | null;
   url: string;
   transcript_status: TranscriptStatus;
+  is_manual_import: boolean;
   transcript_error: string | null;
 }
 
@@ -108,6 +120,7 @@ export interface Concept {
   name: string;
   description: string;
   confidence: number;
+  instrument_tags: string[];
   created_at: string;
   sources: ConceptSource[];
 }
@@ -120,13 +133,20 @@ export interface RuleSource {
   excerpt: string;
 }
 
+export type RuleEvidenceType = "EXPLICIT" | "IMPLIED" | "DISCRETIONARY" | "USER_DEFINED" | "AI_ASSUMPTION";
+export type Quantifiability = "FULLY_QUANTIFIABLE" | "PARTIALLY_QUANTIFIABLE" | "DISCRETIONARY";
+
 export interface Rule {
   id: string;
+  series_id: string | null;
   category: RuleCategory;
   natural_language_rule: string;
   machine_readable_rule: Record<string, unknown> | null;
   confidence: number;
   status: RuleStatus;
+  evidence_type: RuleEvidenceType;
+  quantifiability: Quantifiability | null;
+  instrument_tags: string[];
   is_user_provided: boolean;
   user_note: string | null;
   created_at: string;

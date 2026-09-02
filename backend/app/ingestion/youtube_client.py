@@ -46,6 +46,18 @@ class TranscriptResult:
     is_auto_generated: bool
 
 
+@dataclass(frozen=True)
+class PlaylistInfo:
+    playlist_id: str
+    title: str
+
+
+@dataclass(frozen=True)
+class ChannelPlaylists:
+    channel_display_name: str | None
+    playlists: list[PlaylistInfo]
+
+
 class TranscriptUnavailableError(Exception):
     """The video has no accessible transcript/captions. Never caught and
     silently ignored — callers must persist `TRANSCRIPT_UNAVAILABLE`."""
@@ -94,12 +106,42 @@ def list_playlist_video_ids(playlist_id: str, max_videos: int) -> list[str]:
 def list_channel_video_ids(channel_identifier: str, max_videos: int) -> list[str]:
     """`channel_identifier` is the value returned by `classify_youtube_url`
     for a CHANNEL source: `channel/<id>`, `@<handle>`, `c/<name>`, or
-    `user/<name>`."""
+    `user/<name>`.
+
+    This is the *flat* video list (YouTube's own "Videos" tab ordering) —
+    used only as a fallback when a channel has no playlists to organize by
+    (see `list_channel_playlists`). Prefer playlist-scoped ingestion so
+    videos retain a `Series` — Module 3's "do not flatten the channel"
+    requirement.
+    """
     url = f"https://www.youtube.com/{channel_identifier}/videos"
     with yt_dlp.YoutubeDL(_ydl_opts({"extract_flat": True, "playlistend": max_videos})) as ydl:
         info = ydl.extract_info(url, download=False)
     entries = (info or {}).get("entries") or []
     return [e["id"] for e in entries if e and e.get("id")][:max_videos]
+
+
+def list_channel_playlists(channel_identifier: str, max_playlists: int = 50) -> ChannelPlaylists:
+    """Enumerates a channel's public playlists via its `/playlists` tab.
+
+    Each playlist becomes a `Series` in `ingestion_service.resolve_source`
+    so a multi-year, multi-mentorship channel (like ICT's) never gets
+    collapsed into one undifferentiated video list. A channel with no
+    playlists returns an empty list — the caller falls back to
+    `list_channel_video_ids` in that case, tagged as "uncategorized" rather
+    than silently pretending a series exists.
+    """
+    url = f"https://www.youtube.com/{channel_identifier}/playlists"
+    with yt_dlp.YoutubeDL(_ydl_opts({"extract_flat": True, "playlistend": max_playlists})) as ydl:
+        info = ydl.extract_info(url, download=False)
+    entries = (info or {}).get("entries") or []
+    playlists = [
+        PlaylistInfo(playlist_id=e["id"], title=e.get("title") or f"Playlist {e['id']}")
+        for e in entries
+        if e and e.get("id")
+    ][:max_playlists]
+    channel_display_name = (info or {}).get("channel") or (info or {}).get("uploader")
+    return ChannelPlaylists(channel_display_name=channel_display_name, playlists=playlists)
 
 
 def fetch_transcript(video_id: str) -> TranscriptResult:
