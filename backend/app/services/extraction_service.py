@@ -95,7 +95,7 @@ def _store_cache_result(
     db.flush()
 
 
-def _persist_concept(db: Session, project_id, extracted: ExtractedConcept) -> Concept:
+def _persist_concept(db: Session, project_id, video: Video, extracted: ExtractedConcept) -> Concept:
     concept = Concept(
         project_id=project_id,
         name=extracted.name,
@@ -109,7 +109,16 @@ def _persist_concept(db: Session, project_id, extracted: ExtractedConcept) -> Co
         db.add(
             ConceptSource(
                 concept_id=concept.id,
-                video_id=source.video_id,
+                # Stamped from the video this batch was built for, never
+                # trusted from the (possibly cache-served) extracted output:
+                # a batch is always every chunk of exactly one video (see
+                # `_chunks_for_video`), so the true video_id is never in
+                # question here — but a cache hit replays whatever video_id
+                # was embedded in the JSON the *first* time this exact chunk
+                # text was seen, which is wrong the moment two different
+                # videos ever produce byte-identical chunk text (duplicated
+                # intros/outros, or two fixture videos in a test).
+                video_id=video.id,
                 start_seconds=source.start_seconds,
                 end_seconds=source.end_seconds,
                 excerpt=source.excerpt,
@@ -138,7 +147,9 @@ def _persist_rule(db: Session, project_id, video: Video, extracted: ExtractedRul
         db.add(
             RuleSource(
                 rule_id=rule.id,
-                video_id=source.video_id,
+                # See _persist_concept's comment: always the batch's own
+                # video, never the (possibly stale, cache-served) echoed id.
+                video_id=video.id,
                 start_seconds=source.start_seconds,
                 end_seconds=source.end_seconds,
                 excerpt=source.excerpt,
@@ -180,7 +191,7 @@ def extract_concepts_for_project(
                     result.model_dump(mode="json"),
                 )
             for extracted in result.concepts:
-                created.append(_persist_concept(db, project_id, extracted))
+                created.append(_persist_concept(db, project_id, video, extracted))
         db.commit()
         if progress_cb:
             progress_cb((i + 1) / total * 100.0, f"Extracted concepts from {video.title}")
