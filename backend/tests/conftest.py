@@ -12,11 +12,14 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
-
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
+    # Imported lazily so pure-unit-test modules (e.g. strategy compiler,
+    # codegen, backtest engine tests) can run without every API route
+    # module existing/importing cleanly yet.
+    from app.main import app
+
     with TestClient(app) as test_client:
         yield test_client
         app.dependency_overrides.clear()

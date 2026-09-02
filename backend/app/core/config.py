@@ -2,8 +2,7 @@
 
 All configuration is loaded from environment variables (optionally via a
 `.env` file in local development). Nothing here is hardcoded — see
-`.env.example` at the repo root for the full list of variables the system
-will eventually use across every phase.
+`.env.example` at the repo root for the full list of variables.
 
 Secrets (API keys, tokens, webhook secrets) are declared as `SecretStr` so
 they are never accidentally rendered in logs, `repr()`, or FastAPI's
@@ -29,49 +28,61 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- App identity -----------------------------------------------------
-    app_name: str = "US100 COMMAND"
+    # --- App identity -------------------------------------------------------
+    app_name: str = "StrategyForge AI"
     app_version: str = "0.1.0"
     app_env: Literal["development", "test", "staging", "production"] = "development"
     log_level: str = "INFO"
 
-    # --- CORS ---------------------------------------------------------------
+    # --- CORS -----------------------------------------------------------------
     cors_origins: str = "http://localhost:3000"
 
-    # --- Database -----------------------------------------------------------
+    # --- Database ---------------------------------------------------------------
     database_url: str = Field(
-        default="postgresql+psycopg://us100:us100@localhost:5432/us100_command",
-        description="SQLAlchemy connection string for Postgres.",
+        default="postgresql+psycopg://strategyforge:strategyforge@localhost:5432/strategyforge",
+        description="SQLAlchemy connection string for Postgres (pgvector extension required).",
     )
 
-    # --- Redis --------------------------------------------------------------
+    # --- Redis / Celery -----------------------------------------------------
     redis_url: str = Field(default="redis://localhost:6379/0")
+    celery_broker_url: str = Field(default="")
+    celery_result_backend_url: str = Field(default="")
 
     # --- Security -------------------------------------------------------------
-    secret_key: SecretStr = Field(
-        default=SecretStr("changeme-dev-only-do-not-use-in-production"),
-    )
+    secret_key: SecretStr = Field(default=SecretStr("changeme-dev-only-do-not-use-in-production"))
 
-    # --- TradingView webhook (Phase 2) --------------------------------------
-    tradingview_webhook_secret: SecretStr = Field(default=SecretStr(""))
+    # --- Clerk (authentication) ------------------------------------------------
+    clerk_publishable_key: str = ""
+    clerk_secret_key: SecretStr = Field(default=SecretStr(""))
+    clerk_jwks_url: str = ""
+    clerk_issuer: str = ""
+    # Development-only escape hatch: when true and no Clerk keys are set, a
+    # single fixed dev user is used instead of verifying a Clerk token, so
+    # the pipeline can be exercised locally without a Clerk account. Must be
+    # false in any deployed environment.
+    auth_dev_mode: bool = False
 
-    # --- Anthropic Claude (Phase 8) ------------------------------------------
+    # --- LLM providers -----------------------------------------------------
     anthropic_api_key: SecretStr = Field(default=SecretStr(""))
     anthropic_model: str = "claude-sonnet-5"
+    openai_api_key: SecretStr = Field(default=SecretStr(""))
+    openai_model: str = "gpt-4o"
+    default_llm_provider: Literal["anthropic", "openai"] = "anthropic"
 
-    # --- Telegram (Phase 7) --------------------------------------------------
-    telegram_bot_token: SecretStr = Field(default=SecretStr(""))
-    telegram_chat_id: str = ""
+    # --- Cost controls -------------------------------------------------------
+    # Hard ceiling on estimated USD cost for a single ingestion job before it
+    # requires explicit user confirmation (Module: Cost Controls).
+    large_job_cost_confirmation_threshold_usd: float = 2.0
+    max_videos_per_channel_ingest: int = 500
 
-    # --- Email notifications (interface only in V1) --------------------------
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_username: str = ""
-    smtp_password: SecretStr = Field(default=SecretStr(""))
-    email_from_address: str = ""
+    # --- Stripe (billing) ----------------------------------------------------
+    stripe_secret_key: SecretStr = Field(default=SecretStr(""))
+    stripe_webhook_secret: SecretStr = Field(default=SecretStr(""))
+    stripe_publishable_key: str = ""
 
-    # --- Live trading safety gate (inert in V1, see docs/LIVE_TRADING_FUTURE.md) --
-    live_trading_enabled: bool = False
+    # --- Market data ---------------------------------------------------------
+    market_data_provider: Literal["csv"] = "csv"
+    market_data_csv_dir: str = "./data/market_csv"
 
     @field_validator("app_env", mode="before")
     @classmethod
@@ -85,6 +96,14 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def effective_celery_broker_url(self) -> str:
+        return self.celery_broker_url or self.redis_url
+
+    @property
+    def effective_celery_result_backend_url(self) -> str:
+        return self.celery_result_backend_url or self.redis_url
 
 
 @lru_cache

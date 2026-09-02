@@ -1,7 +1,7 @@
 [project]
-name = "us100-command-backend"
+name = "strategyforge-backend"
 version = "0.1.0"
-description = "US100 COMMAND backend — AI-assisted NASDAQ-100 trading analysis platform"
+description = "StrategyForge AI backend — turns educational trading content into structured, testable trading systems"
 requires-python = ">=3.12"
 
 [tool.ruff]

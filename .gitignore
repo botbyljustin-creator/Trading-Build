@@ -35,3 +35,7 @@ next-env.d.ts
 
 # Docker
 docker-compose.override.yml
+
+# Local market data (user-provided CSVs for backtesting)
+backend/data/market_csv/*.csv
+backend/data/market_csv/*.meta.json

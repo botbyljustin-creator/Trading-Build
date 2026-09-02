@@ -1,1 +1,2 @@
-"""Composition root: orchestrates the market-data -> ... -> verdict -> paper-trade pipeline described in ARCHITECTURE.md. Not yet implemented — see IMPLEMENTATION_PLAN.md Phase 2+."""
+"""Composition-root services orchestrating the ingestion -> extraction ->
+strategy -> codegen -> backtest pipeline for the API/worker layers."""

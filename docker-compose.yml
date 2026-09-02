@@ -1,20 +1,20 @@
-name: us100-command
+name: strategyforge-ai
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-us100}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-us100_dev_password_change_me}
-      POSTGRES_DB: ${POSTGRES_DB:-us100_command}
+      POSTGRES_USER: ${POSTGRES_USER:-strategyforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strategyforge_dev_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-strategyforge}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-us100} -d ${POSTGRES_DB:-us100_command}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-strategyforge} -d ${POSTGRES_DB:-strategyforge}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,9 +39,10 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://us100:us100_dev_password_change_me@postgres:5432/us100_command}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://strategyforge:strategyforge_dev_password_change_me@postgres:5432/strategyforge}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      MARKET_DATA_CSV_DIR: /app/data/market_csv
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -57,6 +58,30 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  worker:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://strategyforge:strategyforge_dev_password_change_me@postgres:5432/strategyforge}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      MARKET_DATA_CSV_DIR: /app/data/market_csv
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    command: celery -A app.workers.celery_app worker --loglevel=info
 
   frontend:
     build:
@@ -65,6 +90,7 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
       INTERNAL_API_URL: http://backend:8000
       WATCHPACK_POLLING: "true"
     ports:

@@ -1,5 +1,5 @@
 {
-  "name": "us100-command-frontend",
+  "name": "strategyforge-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,10 @@
   "dependencies": {
     "next": "14.2.35",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "@clerk/nextjs": "5.7.5",
+    "clsx": "2.1.1",
+    "recharts": "2.13.3"
   },
   "devDependencies": {
     "@types/node": "22.10.2",

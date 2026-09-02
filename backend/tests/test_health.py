@@ -29,7 +29,7 @@ def test_health_all_healthy(client: TestClient) -> None:
     assert body["status"] == "ok"
     assert body["components"]["database"]["status"] == "ok"
     assert body["components"]["redis"]["status"] == "ok"
-    assert body["app_name"] == "US100 COMMAND"
+    assert body["app_name"] == "StrategyForge AI"
 
 
 def test_health_reports_database_outage_without_raising(client: TestClient) -> None:
@@ -66,5 +66,5 @@ def test_root_endpoint(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.json()
-    assert body["name"] == "US100 COMMAND"
+    assert body["name"] == "StrategyForge AI"
     assert body["docs"] == "/docs"

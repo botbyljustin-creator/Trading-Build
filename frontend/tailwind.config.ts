@@ -1,8 +1,8 @@
 import type { Config } from "tailwindcss";
 
-// US100 COMMAND design tokens: dense, dark, institutional — Bloomberg /
-// trading-terminal register, not a consumer SaaS palette. Kept minimal in
-// Phase 1; extended as dashboard pages are built in Phase 6.
+// StrategyForge AI design tokens: dense, dark, institutional register —
+// closer to a trading terminal than a consumer SaaS palette, matching the
+// Linear/Stripe/TradingView-quality bar the product spec asks for.
 const config: Config = {
   darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
